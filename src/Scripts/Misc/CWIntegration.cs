@@ -18,10 +18,13 @@ public static class CWIntegration
 
         if (room == null || room.game.IsPearlcatStory()) return;
 
+
         var miscProg = Utils.GetMiscProgression();
         var miscWorld = room.game.GetMiscWorld();
 
         if (miscWorld == null) return;
+
+        if (!CWOracleHooks.WorldSaveData.TryGetValue(room.game.GetStorySession.saveState.miscWorldSaveData, out var cwSaveData)) return;
 
 
         runOriginalCode = false;
@@ -31,12 +34,20 @@ public static class CWIntegration
         
         if (miscProg.HasTrueEnding)
         {
-            CWConversation.CWEventsFromFile(self, "Pearlcat_FirstEncounter_TrueEnd");
+            switch (miscWorld.CWMeetCount)
+            {
+                case 1:
+                    CWConversation.CWEventsFromFile(self, "Pearlcat_FirstEncounter_TrueEnd");
+                    break;
 
-            CWConversation.CWEventsFromFile(self, "Pearlcat_SecondEncounter_TrueEnd");
+                case 2:
+                    CWConversation.CWEventsFromFile(self, "Pearlcat_SecondEncounter_TrueEnd");
+                    break;
 
-
-            CWConversation.CWEventsFromFile(self, "Pearlcat_RandomGreeting_TrueEnd", false, null, true, rand);
+                default:
+                    CWConversation.CWEventsFromFile(self, "Pearlcat_RandomGreeting_TrueEnd", false, null, true, rand);
+                    break;
+            }
         }
         else
         {
@@ -44,33 +55,61 @@ public static class CWIntegration
             {
                 if (miscProg.IsPearlpupSick)
                 {
-                    CWConversation.CWEventsFromFile(self, "Pearlcat_FirstEncounter_SickPup");
+                    switch (miscWorld.CWMeetSickCount)
+                    {
+                        case 1:
+                            CWConversation.CWEventsFromFile(self, "Pearlcat_FirstEncounter_SickPup");
+                            break;
 
-                    CWConversation.CWEventsFromFile(self, "Pearlcat_SecondEncounter_SickPup");
+                        case 2:
+                            CWConversation.CWEventsFromFile(self, "Pearlcat_SecondEncounter_SickPup");
+                            break;
 
+                        default:
+                            CWConversation.CWEventsFromFile(self, "Pearlcat_RandomGreeting_SickPup", false, null, true, rand);
+                            break;
+                    }
 
-                    CWConversation.CWEventsFromFile(self, "Pearlcat_RandomGreeting_SickPup", false, null, true, rand);
+                    miscWorld.CWMeetSickCount++;
                 }
                 else
                 {
-                    CWConversation.CWEventsFromFile(self, "Pearlcat_FirstEncounter_HasPup");
+                    switch (miscWorld.CWMeetCount)
+                    {
+                        case 1:
+                            CWConversation.CWEventsFromFile(self, "Pearlcat_FirstEncounter_HasPup");
+                            break;
 
-                    CWConversation.CWEventsFromFile(self, "Pearlcat_SecondEncounter_HasPup");
+                        case 2:
+                            CWConversation.CWEventsFromFile(self, "Pearlcat_SecondEncounter_HasPup");
+                            break;
 
-
-                    CWConversation.CWEventsFromFile(self, "Pearlcat_RandomGreeting_HasPup", false, null, true, rand);
+                        default:
+                            CWConversation.CWEventsFromFile(self, "Pearlcat_RandomGreeting_HasPup", false, null, true, rand);
+                            break;
+                    }
                 }
             }
             else
             {
-                CWConversation.CWEventsFromFile(self, "Pearlcat_FirstEncounter_NoPup");
+                switch (miscWorld.CWMeetCount)
+                {
+                    case 1:
+                        CWConversation.CWEventsFromFile(self, "Pearlcat_FirstEncounter_NoPup");
+                        break;
 
-                CWConversation.CWEventsFromFile(self, "Pearlcat_SecondEncounter");
+                    case 2:
+                        CWConversation.CWEventsFromFile(self, "Pearlcat_RandomGreeting_NoPup", false, null, true, rand);
+                        break;
 
-
-                CWConversation.CWEventsFromFile(self, "Pearlcat_RandomGreeting_NoPup", false, null, true, rand);
+                    default:
+                        CWConversation.CWEventsFromFile(self, "Pearlcat_SecondEncounter");
+                        break;
+                }
             }
         }
+
+        miscWorld.CWMeetCount++;
     }
 
     private static void SSOracleBehavior_SpecialEvent(On.SSOracleBehavior.orig_SpecialEvent orig, SSOracleBehavior self, string eventName)
@@ -85,6 +124,16 @@ public static class CWIntegration
 
     private static void GiveCWPearl(Oracle oracle, bool withEffect = true)
     {
+        var miscWorld = oracle.room.game.GetMiscWorld();
+
+        if (miscWorld is null) return;
+
+
+        if (miscWorld.CWGavePearl) return;
+
+        miscWorld.CWGavePearl = true;
+
+
         foreach (var roomObject in oracle.room.physicalObjects)
         {
             foreach (var physicalObject in roomObject)

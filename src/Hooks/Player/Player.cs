@@ -30,8 +30,8 @@ public static partial class Hooks
 
         On.Player.SpearOnBack.Update += SpearOnBack_Update;
 
-        new Hook(
-            typeof(Player).GetProperty(nameof(Player.VisibilityBonus), BindingFlags.Instance | BindingFlags.Public).GetGetMethod(),
+        _ = new Hook(
+            typeof(Player).GetProperty(nameof(Player.VisibilityBonus), BindingFlags.Instance | BindingFlags.Public)?.GetGetMethod(),
             typeof(Hooks).GetMethod(nameof(GetPlayerVisibilityBonus), BindingFlags.Static | BindingFlags.Public)
         );
 
@@ -39,7 +39,10 @@ public static partial class Hooks
         On.Creature.Grasp.Release += Grasp_Release;
 
         On.VoidSea.VoidSeaScene.Update += VoidSeaScene_Update;
-       
+
+        On.Player.ThrownSpear += Player_ThrownSpear;
+        On.Player.Stun += PlayerOnStun;
+
         try
         {
             IL.Creature.Update += Creature_Update;
@@ -49,9 +52,7 @@ public static partial class Hooks
             Plugin.Logger.LogError("Player Hooks IL Exception: \n" + e);
         }
 
-        On.Player.ThrownSpear += Player_ThrownSpear;
     }
-
 
 
     private static void Player_ctor(On.Player.orig_ctor orig, Player self, AbstractCreature abstractCreature, World world)
@@ -1141,5 +1142,16 @@ public static partial class Hooks
             spearModule.ReturnTimer = -1;
             spearModule.ThrownByPlayer = new(self);
         }
+    }
+
+
+    private static void PlayerOnStun(On.Player.orig_Stun orig, Player self, int st)
+    {
+        if (self.TryGetPearlcatModule(out var playerModule))
+        {
+            if (playerModule.IsPossessingCreature) return;
+        }
+
+        orig(self, st);
     }
 }

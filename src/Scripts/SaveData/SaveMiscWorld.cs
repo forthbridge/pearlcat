@@ -47,4 +47,5 @@ public class SaveMiscWorld
     // Chasing Wind
     public int CWMeetCount { get; set; }
     public int CWMeetSickCount { get; set; }
+    public bool CWGavePearl { get; set; }
 }
